@@ -397,6 +397,42 @@
       to { transform: rotate(360deg); }
     }
 
+    .discord-login-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .discord-login-btn:hover {
+      background: #4752c4;
+      transform: translateY(-2px);
+    }
+
+    .logout-btn {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      background: #c03537;
+    }
+
     @media (max-width: 768px) {
       .game-container {
         flex-direction: column;
@@ -506,8 +542,15 @@
         <div class="user-info" id="userInfo">
           <img class="user-avatar" id="userAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord Avatar">
           <div class="user-details">
-            <div class="user-name" id="userName">Connecting to Discord...</div>
-            <div class="user-id" id="userId">ID: Loading...</div>
+            <div class="user-name" id="userName">Guest Player</div>
+            <div class="user-id" id="userId">Not connected to Discord</div>
+            <button class="discord-login-btn" id="discordLoginBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02C2.44 8.7 1.91 11.9 2.2 15.03c0 .02.01.04.03.05c1.57 1.15 3.1 1.84 4.59 2.3c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.67 1.19 1.07 1.74c.03.01.06.02.09.01c1.5-.46 3.03-1.15 4.6-2.3c.02-.01.03-.03.03-.05c.35-3.53-.74-6.69-2.35-9.68c-.01-.02-.02-.02-.04-.02zm-11.1 8.08c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.65 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"/>
+              </svg>
+              Login with Discord
+            </button>
+            <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
           </div>
         </div>
 
@@ -589,7 +632,7 @@
   <script>
     // Game configuration
     const CLIENT_ID = '1408815385012076738';
-    const REDIRECT_URI = window.location.origin + window.location.pathname;
+    const REDIRECT_URI = 'https://gra1.vercel.app/';
     const API_BASE_URL = 'https://discord.com/api';
 
     let rows = 9, cols = 9, minesCount = 10;
@@ -634,6 +677,8 @@
     const winTimeEl = document.getElementById('winTime');
     const playAgainBtn = document.getElementById('playAgainBtn');
     const tryAgainBtn = document.getElementById('tryAgainBtn');
+    const discordLoginBtn = document.getElementById('discordLoginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     // Stats elements
     const totalGamesEl = document.getElementById('totalGames');
@@ -677,6 +722,7 @@
           discordUser.accessToken = storedToken;
           discordUser = {...discordUser, ...JSON.parse(storedUser)};
           updateUserInfo();
+          toggleLoginButtons(true);
         }
         
         // Load stats
@@ -716,6 +762,7 @@
           }));
           
           updateUserInfo();
+          toggleLoginButtons(true);
           loadStats();
         }
       } catch (error) {
@@ -728,26 +775,96 @@
     function initDiscordAuth() {
       // Check for auth response
       checkAuthResponse();
-      
-      // If not connected, try to connect automatically
-      if (!discordUser.connected) {
-        setTimeout(() => {
-          if (!discordUser.connected) {
-            startDiscordOAuth();
-          }
-        }, 1000);
-      }
     }
 
-    // Start Discord OAuth flow
+    // Start Discord OAuth flow in a popup window
     function startDiscordOAuth() {
+      const width = 600;
+      const height = 700;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      
       const authUrl = new URL('https://discord.com/oauth2/authorize');
       authUrl.searchParams.append('client_id', CLIENT_ID);
       authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
       authUrl.searchParams.append('response_type', 'token');
       authUrl.searchParams.append('scope', 'identify');
+      authUrl.searchParams.append('prompt', 'none');
       
-      window.location.href = authUrl.toString();
+      const popup = window.open(
+        authUrl.toString(), 
+        'Discord Login', 
+        `width=${width},height=${height},top=${top},left=${left}`
+      );
+      
+      // Check for popup closed or redirect
+      const checkPopup = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          // Check if we have the token in localStorage (set by the popup)
+          setTimeout(() => {
+            const token = localStorage.getItem('discordAccessToken');
+            const user = localStorage.getItem('discordUser');
+            
+            if (token && user) {
+              discordUser.accessToken = token;
+              discordUser = {...discordUser, ...JSON.parse(user)};
+              updateUserInfo();
+              toggleLoginButtons(true);
+              loadStats();
+            }
+          }, 1000);
+        }
+        
+        try {
+          if (popup.location.href.includes(REDIRECT_URI)) {
+            const hash = popup.location.hash;
+            if (hash && hash.includes('access_token')) {
+              const params = new URLSearchParams(hash.substring(1));
+              const accessToken = params.get('access_token');
+              
+              if (accessToken) {
+                clearInterval(checkPopup);
+                popup.close();
+                
+                // Get user info
+                getUserInfo(accessToken);
+              }
+            }
+          }
+        } catch (error) {
+          // Cross-origin error, ignore
+        }
+      }, 500);
+    }
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('discordAccessToken');
+      localStorage.removeItem('discordUser');
+      
+      discordUser = {
+        id: null,
+        username: 'Guest',
+        avatar: null,
+        discriminator: '0',
+        connected: false,
+        accessToken: null
+      };
+      
+      updateUserInfo();
+      toggleLoginButtons(false);
+    }
+
+    // Toggle login/logout buttons
+    function toggleLoginButtons(isLoggedIn) {
+      if (isLoggedIn) {
+        discordLoginBtn.style.display = 'none';
+        logoutBtn.style.display = 'block';
+      } else {
+        discordLoginBtn.style.display = 'block';
+        logoutBtn.style.display = 'none';
+      }
     }
 
     // Initialize game
@@ -1220,6 +1337,14 @@
     tryAgainBtn.addEventListener('click', () => {
       loseModal.style.display = "none";
       initGame();
+    });
+
+    discordLoginBtn.addEventListener('click', () => {
+      startDiscordOAuth();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      logout();
     });
 
     // Initialize the game and Discord auth
