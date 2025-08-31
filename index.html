@@ -246,38 +246,34 @@
       font-size: 0.9rem;
     }
 
-    .achievements {
-      margin-top: 20px;
-    }
-
-    .achievement-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .achievement {
+    .user-info {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
       padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
     }
 
-    .achievement-icon {
-      font-size: 1.5rem;
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
     }
 
-    .achievement-info {
-      flex: 1;
+    .user-details {
+      display: flex;
+      flex-direction: column;
     }
 
-    .achievement-title {
+    .user-name {
       font-weight: bold;
+      font-size: 1.1rem;
     }
 
-    .achievement-desc {
+    .user-id {
       font-size: 0.8rem;
       color: var(--gray);
     }
@@ -303,9 +299,22 @@
     .leaderboard-item {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       background: rgba(0, 0, 0, 0.2);
       padding: 12px 15px;
       border-radius: 8px;
+    }
+
+    .leaderboard-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .leaderboard-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
     }
 
     .leaderboard-name {
@@ -314,6 +323,7 @@
 
     .leaderboard-time {
       color: var(--primary);
+      font-weight: bold;
     }
 
     .how-to-play {
@@ -365,6 +375,26 @@
       border-radius: 0;
       z-index: 100;
       pointer-events: none;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     @media (max-width: 768px) {
@@ -473,7 +503,15 @@
       </div>
 
       <div class="stats-section">
-        <h2 class="stats-title">Game Statistics</h2>
+        <div class="user-info" id="userInfo">
+          <img class="user-avatar" id="userAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord Avatar">
+          <div class="user-details">
+            <div class="user-name" id="userName">Connecting to Discord...</div>
+            <div class="user-id" id="userId">ID: Loading...</div>
+          </div>
+        </div>
+
+        <h2 class="stats-title">Your Statistics</h2>
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Total Games</div>
@@ -492,25 +530,14 @@
             <div class="stat-value" id="winRate">0%</div>
           </div>
         </div>
-
-        <div class="recent-players">
-          <h3 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary);">Your Recent Games</h3>
-          <div class="leaderboard-list" id="recentGames">
-            <div class="leaderboard-item">
-              <span class="leaderboard-name">No games yet</span>
-              <span class="leaderboard-time">-</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
     <div class="leaderboard">
-      <h2 class="leaderboard-title">Your Best Times</h2>
-      <div class="leaderboard-list" id="bestTimes">
-        <div class="leaderboard-item">
-          <span class="leaderboard-name">No records yet</span>
-          <span class="leaderboard-time">-</span>
+      <h2 class="leaderboard-title">Global Leaderboard</h2>
+      <div class="leaderboard-list" id="leaderboard">
+        <div class="loading">
+          <div class="loading-spinner"></div>
         </div>
       </div>
     </div>
@@ -539,7 +566,7 @@
 
     <footer>
       <p>© 2025 Minesweeper Elite - Discord Activity | Designed for Discord Activities</p>
-      <p>Last game: <span id="lastUpdated">Never</span></p>
+      <p>Last updated: <span id="lastUpdated">Never</span></p>
     </footer>
   </div>
 
@@ -561,6 +588,10 @@
 
   <script>
     // Game configuration
+    const CLIENT_ID = '1408815385012076738';
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
+    const API_BASE_URL = 'https://discord.com/api';
+
     let rows = 9, cols = 9, minesCount = 10;
     let board = [];
     let revealedCount = 0;
@@ -570,6 +601,16 @@
     let gameOver = false;
     let currentDifficulty = 'easy';
 
+    // Discord user data
+    let discordUser = {
+      id: null,
+      username: 'Guest',
+      avatar: null,
+      discriminator: '0',
+      connected: false,
+      accessToken: null
+    };
+
     // Stats data
     let gameStats = {
       totalGames: 0,
@@ -578,6 +619,9 @@
       recentGames: [],
       bestTimes: []
     };
+
+    // Global leaderboard data
+    let globalLeaderboard = [];
 
     // DOM elements
     const bombCountEl = document.getElementById("bombCountValue");
@@ -596,9 +640,115 @@
     const gamesWonEl = document.getElementById('gamesWon');
     const bestTimeEl = document.getElementById('bestTime');
     const winRateEl = document.getElementById('winRate');
-    const recentGamesEl = document.getElementById('recentGames');
-    const bestTimesEl = document.getElementById('bestTimes');
     const lastUpdatedEl = document.getElementById('lastUpdated');
+    const leaderboardEl = document.getElementById('leaderboard');
+
+    // User info elements
+    const userInfoEl = document.getElementById('userInfo');
+    const userAvatarEl = document.getElementById('userAvatar');
+    const userNameEl = document.getElementById('userName');
+    const userIdEl = document.getElementById('userId');
+
+    // Check for Discord auth response
+    function checkAuthResponse() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const tokenType = params.get('token_type');
+        const expiresIn = params.get('expires_in');
+        
+        if (accessToken) {
+          // Store the access token
+          discordUser.accessToken = accessToken;
+          
+          // Get user info
+          getUserInfo(accessToken);
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } else {
+        // Try to get token from storage
+        const storedToken = localStorage.getItem('discordAccessToken');
+        const storedUser = localStorage.getItem('discordUser');
+        
+        if (storedToken && storedUser) {
+          discordUser.accessToken = storedToken;
+          discordUser = {...discordUser, ...JSON.parse(storedUser)};
+          updateUserInfo();
+        }
+        
+        // Load stats
+        loadStats();
+      }
+    }
+
+    // Get user info from Discord
+    async function getUserInfo(accessToken) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/@me`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          discordUser = {
+            id: userData.id,
+            username: userData.username,
+            avatar: userData.avatar 
+              ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
+              : `https://cdn.discordapp.com/embed/avatars/${userData.discriminator % 5}.png`,
+            discriminator: userData.discriminator,
+            connected: true,
+            accessToken: accessToken
+          };
+          
+          // Save to localStorage
+          localStorage.setItem('discordAccessToken', accessToken);
+          localStorage.setItem('discordUser', JSON.stringify({
+            id: discordUser.id,
+            username: discordUser.username,
+            avatar: discordUser.avatar,
+            discriminator: discordUser.discriminator
+          }));
+          
+          updateUserInfo();
+          loadStats();
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        userNameEl.textContent = 'Error connecting to Discord';
+      }
+    }
+
+    // Initialize Discord auth
+    function initDiscordAuth() {
+      // Check for auth response
+      checkAuthResponse();
+      
+      // If not connected, try to connect automatically
+      if (!discordUser.connected) {
+        setTimeout(() => {
+          if (!discordUser.connected) {
+            startDiscordOAuth();
+          }
+        }, 1000);
+      }
+    }
+
+    // Start Discord OAuth flow
+    function startDiscordOAuth() {
+      const authUrl = new URL('https://discord.com/oauth2/authorize');
+      authUrl.searchParams.append('client_id', CLIENT_ID);
+      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.append('response_type', 'token');
+      authUrl.searchParams.append('scope', 'identify');
+      
+      window.location.href = authUrl.toString();
+    }
 
     // Initialize game
     function initGame() {
@@ -863,7 +1013,9 @@
       if (savedStats) {
         gameStats = JSON.parse(savedStats);
       }
+      
       updateStatsDisplay();
+      loadGlobalLeaderboard();
     }
 
     // Save stats to localStorage
@@ -879,7 +1031,12 @@
         date: new Date().toISOString(),
         difficulty: currentDifficulty,
         time: timer,
-        result: win ? 'win' : 'loss'
+        result: win ? 'win' : 'loss',
+        player: discordUser.connected ? {
+          id: discordUser.id,
+          username: discordUser.username,
+          avatar: discordUser.avatar
+        } : null
       };
       
       // Add to recent games (limit to 5)
@@ -897,22 +1054,40 @@
         }
         
         // Add to best times (limit to 5)
-        gameStats.bestTimes.push({time: timer, date: new Date().toISOString(), difficulty: currentDifficulty});
+        gameStats.bestTimes.push({
+          time: timer, 
+          date: new Date().toISOString(), 
+          difficulty: currentDifficulty,
+          player: discordUser.connected ? {
+            id: discordUser.id,
+            username: discordUser.username,
+            avatar: discordUser.avatar
+          } : null
+        });
+        
         gameStats.bestTimes.sort((a, b) => a.time - b.time);
         if (gameStats.bestTimes.length > 5) {
           gameStats.bestTimes.pop();
         }
+        
+        // Save to global leaderboard (simulated)
+        if (discordUser.connected) {
+          saveToGlobalLeaderboard({
+            player: {
+              id: discordUser.id,
+              username: discordUser.username,
+              avatar: discordUser.avatar
+            },
+            time: timer,
+            difficulty: currentDifficulty,
+            date: new Date().toISOString()
+          });
+        }
       }
-      
-      // Update win rate
-      const winRate = Math.round((gameStats.gamesWon / gameStats.totalGames) * 100);
       
       // Save and update display
       saveStats();
       updateStatsDisplay();
-      
-      // Update last updated time
-      lastUpdatedEl.textContent = new Date().toLocaleString();
     }
 
     // Update statistics display
@@ -933,35 +1108,97 @@
         winRateEl.textContent = '0%';
       }
       
-      // Update recent games
-      if (gameStats.recentGames.length > 0) {
-        recentGamesEl.innerHTML = '';
-        gameStats.recentGames.forEach(game => {
-          const date = new Date(game.date);
-          const item = document.createElement('div');
-          item.classList.add('leaderboard-item');
-          item.innerHTML = `
-            <span class="leaderboard-name">${game.difficulty} - ${game.result === 'win' ? '🏆' : '💥'}</span>
-            <span class="leaderboard-time">${game.time}s</span>
-          `;
-          recentGamesEl.appendChild(item);
-        });
+      // Update last updated time
+      lastUpdatedEl.textContent = new Date().toLocaleString();
+    }
+
+    // Update user info display
+    function updateUserInfo() {
+      if (discordUser.connected) {
+        userAvatarEl.src = discordUser.avatar;
+        userNameEl.textContent = `${discordUser.username}#${discordUser.discriminator}`;
+        userIdEl.textContent = `ID: ${discordUser.id}`;
+      } else {
+        userAvatarEl.src = 'https://cdn.discordapp.com/embed/avatars/0.png';
+        userNameEl.textContent = 'Guest Player';
+        userIdEl.textContent = 'Not connected to Discord';
+      }
+    }
+
+    // Simulated global leaderboard functions
+    // In a real implementation, these would connect to a backend API
+    function loadGlobalLeaderboard() {
+      // Simulate loading
+      leaderboardEl.innerHTML = `
+        <div class="loading">
+          <div class="loading-spinner"></div>
+        </div>
+      `;
+      
+      // Simulate API delay
+      setTimeout(() => {
+        // Try to get from localStorage
+        const savedLeaderboard = localStorage.getItem('globalLeaderboard');
+        if (savedLeaderboard) {
+          globalLeaderboard = JSON.parse(savedLeaderboard);
+        }
+        
+        updateLeaderboardDisplay();
+      }, 1000);
+    }
+    
+    function saveToGlobalLeaderboard(score) {
+      // Add to leaderboard
+      globalLeaderboard.push(score);
+      
+      // Sort by time (ascending)
+      globalLeaderboard.sort((a, b) => a.time - b.time);
+      
+      // Keep only top 10
+      if (globalLeaderboard.length > 10) {
+        globalLeaderboard = globalLeaderboard.slice(0, 10);
       }
       
-      // Update best times
-      if (gameStats.bestTimes.length > 0) {
-        bestTimesEl.innerHTML = '';
-        gameStats.bestTimes.sort((a, b) => a.time - b.time).forEach((time, index) => {
-          const date = new Date(time.date);
-          const item = document.createElement('div');
-          item.classList.add('leaderboard-item');
-          item.innerHTML = `
-            <span class="leaderboard-name">${index + 1}. ${time.difficulty}</span>
-            <span class="leaderboard-time">${time.time}s</span>
-          `;
-          bestTimesEl.appendChild(item);
-        });
+      // Save to localStorage
+      localStorage.setItem('globalLeaderboard', JSON.stringify(globalLeaderboard));
+      
+      // Update display
+      updateLeaderboardDisplay();
+    }
+    
+    function updateLeaderboardDisplay() {
+      leaderboardEl.innerHTML = '';
+      
+      if (globalLeaderboard.length === 0) {
+        const item = document.createElement('div');
+        item.classList.add('leaderboard-item');
+        item.innerHTML = `
+          <div class="leaderboard-user">
+            <img class="leaderboard-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar">
+            <span class="leaderboard-name">No records yet</span>
+          </div>
+          <span class="leaderboard-time">-</span>
+        `;
+        leaderboardEl.appendChild(item);
+        return;
       }
+      
+      globalLeaderboard.forEach((score, index) => {
+        const item = document.createElement('div');
+        item.classList.add('leaderboard-item');
+        
+        const avatar = score.player?.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
+        const username = score.player?.username || 'Anonymous';
+        
+        item.innerHTML = `
+          <div class="leaderboard-user">
+            <img class="leaderboard-avatar" src="${avatar}" alt="${username}">
+            <span class="leaderboard-name">${username}</span>
+          </div>
+          <span class="leaderboard-time">${score.time}s</span>
+        `;
+        leaderboardEl.appendChild(item);
+      });
     }
 
     // Event listeners
@@ -985,16 +1222,14 @@
       initGame();
     });
 
-    // Initialize the game and stats
-    loadStats();
+    // Initialize the game and Discord auth
+    initDiscordAuth();
     setDifficulty('easy');
 
-    // Periodically update the display (every 5 seconds)
+    // Periodically update the display
     setInterval(() => {
-      // This would be where you'd fetch real-time data from a server
-      // For now, we'll just update the last updated time
       lastUpdatedEl.textContent = new Date().toLocaleString();
-    }, 5000);
+    }, 30000);
   </script>
 </body>
 </html>
