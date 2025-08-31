@@ -14,22 +14,48 @@
       background: linear-gradient(135deg, #00111c, #000814);
       color: #eee;
       height: 100vh;
-      justify-content: center;
+      justify-content: flex-start;
+      padding-top: 30px;
     }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       margin-bottom: 10px;
       background: linear-gradient(90deg, #00aaff, #0055ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
+    #topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a192f;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      width: 400px;
+    }
+
+    #bombCount, #timer {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    #resetBtn {
+      background: #001f3f;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 1.5rem;
+    }
+
     #board {
       display: grid;
       grid-template-columns: repeat(10, 40px);
       grid-template-rows: repeat(10, 40px);
-      gap: 3px;
+      gap: 2px;
     }
 
     .cell {
@@ -39,7 +65,7 @@
       align-items: center;
       justify-content: center;
       background: #0a192f;
-      border-radius: 6px;
+      border-radius: 4px;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
@@ -61,22 +87,20 @@
       color: white;
     }
 
-    button {
-      margin-top: 15px;
-      padding: 10px 25px;
-      background: linear-gradient(90deg, #0077ff, #00d4ff);
-      border: none;
-      border-radius: 20px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .cell.flag {
+      background: #003366;
+      color: #ffcc00;
     }
 
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
+    /* Kolory cyfr */
+    .n1 { color: #00aaff; }
+    .n2 { color: #00ff88; }
+    .n3 { color: #ff4444; }
+    .n4 { color: #aa00ff; }
+    .n5 { color: #ffaa00; }
+    .n6 { color: #00ffff; }
+    .n7 { color: #ffffff; }
+    .n8 { color: #999999; }
 
     footer {
       margin-top: 20px;
@@ -87,24 +111,43 @@
 </head>
 <body>
   <h1>Muzes Minesweeper</h1>
+  <div id="topbar">
+    <div id="bombCount">💣 0</div>
+    <button id="resetBtn">🙂</button>
+    <div id="timer">⏱ 0</div>
+  </div>
   <div id="board"></div>
-  <button onclick="startGame()">Restart</button>
   <footer>© 2025 Muzes. All rights reserved.</footer>
 
   <script>
-    const rows = 10;
-    const cols = 10;
-    const minesCount = 15;
+    const rows = 10, cols = 10, minesCount = 15;
     let board = [];
     let revealedCount = 0;
+    let flagsCount = 0;
+    let timer = 0, timerInterval;
+
+    const bombCountEl = document.getElementById("bombCount");
+    const timerEl = document.getElementById("timer");
+    const resetBtn = document.getElementById("resetBtn");
 
     function startGame() {
+      clearInterval(timerInterval);
+      timer = 0;
+      timerEl.textContent = "⏱ 0";
+      timerInterval = setInterval(() => {
+        timer++;
+        timerEl.textContent = "⏱ " + timer;
+      }, 1000);
+
+      flagsCount = 0;
+      bombCountEl.textContent = "💣 " + minesCount;
+
       const boardEl = document.getElementById("board");
       boardEl.innerHTML = "";
       board = [];
       revealedCount = 0;
 
-      // initialize board
+      // init
       for (let r = 0; r < rows; r++) {
         board[r] = [];
         for (let c = 0; c < cols; c++) {
@@ -113,8 +156,12 @@
           cell.dataset.row = r;
           cell.dataset.col = c;
           cell.addEventListener("click", () => reveal(r, c));
+          cell.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            toggleFlag(r, c);
+          });
           boardEl.appendChild(cell);
-          board[r][c] = { mine: false, revealed: false, el: cell, adjacent: 0 };
+          board[r][c] = { mine: false, revealed: false, flagged: false, el: cell, adjacent: 0 };
         }
       }
 
@@ -149,7 +196,7 @@
 
     function reveal(r, c) {
       const cell = board[r][c];
-      if (cell.revealed) return;
+      if (cell.revealed || cell.flagged) return;
 
       cell.revealed = true;
       cell.el.classList.add("revealed");
@@ -157,16 +204,16 @@
       if (cell.mine) {
         cell.el.classList.add("mine");
         cell.el.textContent = "💣";
-        alert("Game Over!");
-        startGame();
+        resetBtn.textContent = "😵";
+        gameOver(false);
         return;
       }
 
       revealedCount++;
       if (cell.adjacent > 0) {
         cell.el.textContent = cell.adjacent;
+        cell.el.classList.add("n" + cell.adjacent);
       } else {
-        // flood fill empty cells
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
             const nr = r + dr, nc = c + dc;
@@ -178,12 +225,48 @@
       }
 
       if (revealedCount === rows * cols - minesCount) {
-        alert("You Win! 🎉");
-        startGame();
+        resetBtn.textContent = "😎";
+        gameOver(true);
       }
     }
 
+    function toggleFlag(r, c) {
+      const cell = board[r][c];
+      if (cell.revealed) return;
+
+      if (cell.flagged) {
+        cell.flagged = false;
+        cell.el.classList.remove("flag");
+        cell.el.textContent = "";
+        flagsCount--;
+      } else {
+        if (flagsCount < minesCount) {
+          cell.flagged = true;
+          cell.el.classList.add("flag");
+          cell.el.textContent = "🚩";
+          flagsCount++;
+        }
+      }
+      bombCountEl.textContent = "💣 " + (minesCount - flagsCount);
+    }
+
+    function gameOver(win) {
+      clearInterval(timerInterval);
+      board.flat().forEach(cell => {
+        if (cell.mine && !cell.revealed) {
+          cell.el.textContent = "💣";
+          cell.el.classList.add("mine");
+        }
+      });
+      setTimeout(() => {
+        alert(win ? "🎉 You Win!" : "💥 Game Over!");
+        startGame();
+      }, 300);
+    }
+
+    resetBtn.addEventListener("click", startGame);
     startGame();
   </script>
 </body>
 </html>
+
