@@ -1,1360 +1,1453 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minesweeper Elite - Discord Edition</title>
-  <style>
-    :root {
-      --primary: #5865F2;
-      --secondary: #57F287;
-      --danger: #ED4245;
-      --warning: #FEE75C;
-      --dark: #23272A;
-      --darker: #0e0f12;
-      --light: #ffffff;
-      --gray: #4f545c;
-      --cell-size: 40px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minesweeper Elite - Discord Edition</title>
+    <style>
+      :root {
+        --primary: #5865f2;
+        --secondary: #57f287;
+        --danger: #ed4245;
+        --warning: #fee75c;
+        --dark: #23272a;
+        --darker: #0e0f12;
+        --light: #ffffff;
+        --gray: #4f545c;
+        --cell-size: 40px;
+      }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    body {
-      margin: 0;
-      font-family: "Segoe UI", "Whitney", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: linear-gradient(135deg, var(--darker), var(--dark));
-      color: var(--light);
-      min-height: 100vh;
-      justify-content: flex-start;
-      padding: 30px 20px;
-      overflow-x: hidden;
-    }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Whitney", "Helvetica Neue", Helvetica, Arial,
+          sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: linear-gradient(135deg, var(--darker), var(--dark));
+        color: var(--light);
+        min-height: 100vh;
+        justify-content: flex-start;
+        padding: 30px 20px;
+        overflow-x: hidden;
+      }
 
-    .container {
-      width: 100%;
-      max-width: 1200px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-      width: 100%;
-    }
-
-    h1 {
-      font-size: 2.8rem;
-      margin-bottom: 10px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
-
-    .subtitle {
-      color: var(--gray);
-      font-size: 1.2rem;
-      margin-bottom: 25px;
-    }
-
-    .game-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 30px;
-      justify-content: center;
-      width: 100%;
-    }
-
-    .game-board-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    #topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(35, 39, 42, 0.8);
-      padding: 12px 25px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 500px;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    #bombCount, #timer {
-      font-size: 1.4rem;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #resetBtn {
-      background: var(--primary);
-      border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      cursor: pointer;
-      font-size: 1.8rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    #resetBtn:hover {
-      transform: scale(1.05);
-      background: #4752c4;
-    }
-
-    #board {
-      display: grid;
-      grid-template-columns: repeat(10, var(--cell-size));
-      grid-template-rows: repeat(10, var(--cell-size));
-      gap: 3px;
-      margin-bottom: 20px;
-      background: rgba(35, 39, 42, 0.5);
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .cell {
-      width: var(--cell-size);
-      height: var(--cell-size);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(79, 84, 92, 0.6);
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s ease;
-      font-size: 1.2rem;
-    }
-
-    .cell:hover {
-      background: rgba(114, 118, 125, 0.8);
-      transform: translateY(-2px);
-    }
-
-    .cell.revealed {
-      background: rgba(35, 39, 42, 0.9);
-      cursor: default;
-      transform: none;
-    }
-
-    .cell.mine {
-      background: var(--danger);
-      color: white;
-    }
-
-    .cell.flag {
-      background: var(--primary);
-      color: var(--warning);
-    }
-
-    /* Number colors */
-    .n1 { color: #00aaff; }
-    .n2 { color: #00ff88; }
-    .n3 { color: #ff4444; }
-    .n4 { color: #aa00ff; }
-    .n5 { color: #ffaa00; }
-    .n6 { color: #00ffff; }
-    .n7 { color: #ffffff; }
-    .n8 { color: #999999; }
-
-    .difficulty-selector {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .difficulty-btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: var(--gray);
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.2s ease;
-    }
-
-    .difficulty-btn.active {
-      background: var(--primary);
-    }
-
-    .difficulty-btn:hover {
-      transform: translateY(-2px);
-    }
-
-    .stats-section {
-      background: rgba(35, 39, 42, 0.8);
-      border-radius: 12px;
-      padding: 20px;
-      width: 100%;
-      max-width: 400px;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .stats-title {
-      font-size: 1.5rem;
-      margin-bottom: 15px;
-      color: var(--secondary);
-      text-align: center;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    .stat-card {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: bold;
-      margin: 5px 0;
-    }
-
-    .stat-label {
-      color: var(--gray);
-      font-size: 0.9rem;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-    }
-
-    .user-avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: 2px solid var(--primary);
-    }
-
-    .user-details {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .user-name {
-      font-weight: bold;
-      font-size: 1.1rem;
-    }
-
-    .user-id {
-      font-size: 0.8rem;
-      color: var(--gray);
-    }
-
-    .leaderboard {
-      margin-top: 30px;
-      width: 100%;
-    }
-
-    .leaderboard-title {
-      font-size: 1.5rem;
-      margin-bottom: 15px;
-      color: var(--secondary);
-      text-align: center;
-    }
-
-    .leaderboard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .leaderboard-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 12px 15px;
-      border-radius: 8px;
-    }
-
-    .leaderboard-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .leaderboard-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-    }
-
-    .leaderboard-name {
-      font-weight: bold;
-    }
-
-    .leaderboard-time {
-      color: var(--primary);
-      font-weight: bold;
-    }
-
-    .how-to-play {
-      margin-top: 30px;
-      background: rgba(35, 39, 42, 0.8);
-      border-radius: 12px;
-      padding: 20px;
-      width: 100%;
-      max-width: 800px;
-    }
-
-    .how-to-title {
-      font-size: 1.5rem;
-      margin-bottom: 15px;
-      color: var(--secondary);
-    }
-
-    .instructions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-    }
-
-    .instruction {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      padding: 15px;
-    }
-
-    .instruction-title {
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: var(--primary);
-    }
-
-    footer {
-      margin-top: 40px;
-      font-size: 0.9rem;
-      color: var(--gray);
-      text-align: center;
-    }
-
-    .confetti {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: var(--secondary);
-      opacity: 0.7;
-      border-radius: 0;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100px;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: var(--primary);
-      animation: spin 1s ease-in-out infinite;
-    }
-
-    .discord-login-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-      transition: all 0.2s ease;
-    }
-
-    .discord-login-btn:hover {
-      background: #4752c4;
-      transform: translateY(-2px);
-    }
-
-    .logout-btn {
-      background: var(--danger);
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      margin-top: 5px;
-      transition: all 0.2s ease;
-    }
-
-    .logout-btn:hover {
-      background: #c03537;
-    }
-
-    @media (max-width: 768px) {
-      .game-container {
+      .container {
+        width: 100%;
+        max-width: 1200px;
+        display: flex;
         flex-direction: column;
         align-items: center;
       }
-      
-      .stats-section {
-        max-width: 100%;
+
+      header {
+        text-align: center;
+        margin-bottom: 20px;
+        width: 100%;
       }
-      
+
       h1 {
-        font-size: 2.2rem;
+        font-size: 2.8rem;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       }
-      
+
       .subtitle {
-        font-size: 1rem;
+        color: var(--gray);
+        font-size: 1.2rem;
+        margin-bottom: 25px;
       }
-    }
 
-    /* Animations */
-    @keyframes celebrate {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
-    }
+      .game-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        justify-content: center;
+        width: 100%;
+      }
 
-    .celebrate {
-      animation: celebrate 0.5s ease;
-    }
+      .game-board-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
+      #topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(35, 39, 42, 0.8);
+        padding: 12px 25px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 500px;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
 
-    .modal-content {
-      background: var(--dark);
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      text-align: center;
-    }
+      #bombCount,
+      #timer {
+        font-size: 1.4rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
-    .modal-title {
-      font-size: 2rem;
-      margin-bottom: 20px;
-      color: var(--secondary);
-    }
+      #resetBtn {
+        background: var(--primary);
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        cursor: pointer;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
 
-    .modal-message {
-      font-size: 1.2rem;
-      margin-bottom: 25px;
-    }
+      #resetBtn:hover {
+        transform: scale(1.05);
+        background: #4752c4;
+      }
 
-    .modal-btn {
-      padding: 12px 25px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+      #board {
+        display: grid;
+        grid-template-columns: repeat(10, var(--cell-size));
+        grid-template-rows: repeat(10, var(--cell-size));
+        gap: 3px;
+        margin-bottom: 20px;
+        background: rgba(35, 39, 42, 0.5);
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      }
 
-    .modal-btn:hover {
-      background: #4752c4;
-      transform: translateY(-2px);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Minesweeper Elite</h1>
-      <div class="subtitle">The ultimate Discord Minesweeper experience</div>
-    </header>
+      .cell {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(79, 84, 92, 0.6);
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease;
+        font-size: 1.2rem;
+      }
 
-    <div class="game-container">
-      <div class="game-board-section">
-        <div class="difficulty-selector">
-          <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
-          <button class="difficulty-btn" data-difficulty="medium">Medium</button>
-          <button class="difficulty-btn" data-difficulty="hard">Hard</button>
-        </div>
+      .cell:hover {
+        background: rgba(114, 118, 125, 0.8);
+        transform: translateY(-2px);
+      }
 
-        <div id="topbar">
-          <div id="bombCount">💣 <span id="bombCountValue">10</span></div>
-          <button id="resetBtn">😊</button>
-          <div id="timer">⏱ <span id="timerValue">0</span></div>
-        </div>
+      .cell.revealed {
+        background: rgba(35, 39, 42, 0.9);
+        cursor: default;
+        transform: none;
+      }
 
-        <div id="board"></div>
-      </div>
+      .cell.mine {
+        background: var(--danger);
+        color: white;
+      }
 
-      <div class="stats-section">
-        <div class="user-info" id="userInfo">
-          <img class="user-avatar" id="userAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord Avatar">
-          <div class="user-details">
-            <div class="user-name" id="userName">Guest Player</div>
-            <div class="user-id" id="userId">Not connected to Discord</div>
-            <button class="discord-login-btn" id="discordLoginBtn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02C2.44 8.7 1.91 11.9 2.2 15.03c0 .02.01.04.03.05c1.57 1.15 3.1 1.84 4.59 2.30c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.67 1.19 1.07 1.74c.03.01.06.02.09.01c1.5-.46 3.03-1.15 4.6-2.30c.02-.01.03-.03.03-.05c.35-3.53-.74-6.69-2.35-9.68c-.01-.02-.02-.02-.04-.02zm-11.1 8.08c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.65 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"/>
-              </svg>
-              Login with Discord
+      .cell.flag {
+        background: var(--primary);
+        color: var(--warning);
+      }
+
+      /* Number colors */
+      .n1 {
+        color: #00aaff;
+      }
+      .n2 {
+        color: #00ff88;
+      }
+      .n3 {
+        color: #ff4444;
+      }
+      .n4 {
+        color: #aa00ff;
+      }
+      .n5 {
+        color: #ffaa00;
+      }
+      .n6 {
+        color: #00ffff;
+      }
+      .n7 {
+        color: #ffffff;
+      }
+      .n8 {
+        color: #999999;
+      }
+
+      .difficulty-selector {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .difficulty-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        background: var(--gray);
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s ease;
+      }
+
+      .difficulty-btn.active {
+        background: var(--primary);
+      }
+
+      .difficulty-btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .stats-section {
+        background: rgba(35, 39, 42, 0.8);
+        border-radius: 12px;
+        padding: 20px;
+        width: 100%;
+        max-width: 400px;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .stats-title {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: var(--secondary);
+        text-align: center;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .stat-card {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin: 5px 0;
+      }
+
+      .stat-label {
+        color: var(--gray);
+        font-size: 0.9rem;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+      }
+
+      .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid var(--primary);
+      }
+
+      .user-details {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+
+      .user-id {
+        font-size: 0.8rem;
+        color: var(--gray);
+      }
+
+      .leaderboard {
+        margin-top: 30px;
+        width: 100%;
+      }
+
+      .leaderboard-title {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: var(--secondary);
+        text-align: center;
+      }
+
+      .leaderboard-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .leaderboard-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 12px 15px;
+        border-radius: 8px;
+      }
+
+      .leaderboard-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .leaderboard-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+      }
+
+      .leaderboard-name {
+        font-weight: bold;
+      }
+
+      .leaderboard-time {
+        color: var(--primary);
+        font-weight: bold;
+      }
+
+      .how-to-play {
+        margin-top: 30px;
+        background: rgba(35, 39, 42, 0.8);
+        border-radius: 12px;
+        padding: 20px;
+        width: 100%;
+        max-width: 800px;
+      }
+
+      .how-to-title {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: var(--secondary);
+      }
+
+      .instructions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+      }
+
+      .instruction {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+      }
+
+      .instruction-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: var(--primary);
+      }
+
+      footer {
+        margin-top: 40px;
+        font-size: 0.9rem;
+        color: var(--gray);
+        text-align: center;
+      }
+
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: var(--secondary);
+        opacity: 0.7;
+        border-radius: 0;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+      }
+
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      .discord-login-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        transition: all 0.2s ease;
+      }
+
+      .discord-login-btn:hover {
+        background: #4752c4;
+        transform: translateY(-2px);
+      }
+
+      .logout-btn {
+        background: var(--danger);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 5px;
+        transition: all 0.2s ease;
+      }
+
+      .logout-btn:hover {
+        background: #c03537;
+      }
+
+      @media (max-width: 768px) {
+        .game-container {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .stats-section {
+          max-width: 100%;
+        }
+
+        h1 {
+          font-size: 2.2rem;
+        }
+
+        .subtitle {
+          font-size: 1rem;
+        }
+      }
+
+      /* Animations */
+      @keyframes celebrate {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .celebrate {
+        animation: celebrate 0.5s ease;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-content {
+        background: var(--dark);
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+      }
+
+      .modal-title {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: var(--secondary);
+      }
+
+      .modal-message {
+        font-size: 1.2rem;
+        margin-bottom: 25px;
+      }
+
+      .modal-btn {
+        padding: 12px 25px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .modal-btn:hover {
+        background: #4752c4;
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Minesweeper Elite</h1>
+        <div class="subtitle">The ultimate Discord Minesweeper experience</div>
+      </header>
+
+      <div class="game-container">
+        <div class="game-board-section">
+          <div class="difficulty-selector">
+            <button class="difficulty-btn active" data-difficulty="easy">
+              Easy
             </button>
-            <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
+            <button class="difficulty-btn" data-difficulty="medium">
+              Medium
+            </button>
+            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
           </div>
+
+          <div id="topbar">
+            <div id="bombCount">💣 <span id="bombCountValue">10</span></div>
+            <button id="resetBtn">😊</button>
+            <div id="timer">⏱ <span id="timerValue">0</span></div>
+          </div>
+
+          <div id="board"></div>
         </div>
 
-        <h2 class="stats-title">Your Statistics</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Total Games</div>
-            <div class="stat-value" id="totalGames">0</div>
+        <div class="stats-section">
+          <div class="user-info" id="userInfo">
+            <img
+              class="user-avatar"
+              id="userAvatar"
+              src="https://cdn.discordapp.com/embed/avatars/0.png"
+              alt="Discord Avatar"
+            />
+            <div class="user-details">
+              <div class="user-name" id="userName">Guest Player</div>
+              <div class="user-id" id="userId">Not connected to Discord</div>
+              <button class="discord-login-btn" id="discordLoginBtn">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02C2.44 8.7 1.91 11.9 2.2 15.03c0 .02.01.04.03.05c1.57 1.15 3.1 1.84 4.59 2.30c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.67 1.19 1.07 1.74c.03.01.06.02.09.01c1.5-.46 3.03-1.15 4.6-2.30c.02-.01.03-.03.03-.05c.35-3.53-.74-6.69-2.35-9.68c-.01-.02-.02-.02-.04-.02zm-11.1 8.08c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.65 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"
+                  />
+                </svg>
+                Login with Discord
+              </button>
+              <button class="logout-btn" id="logoutBtn" style="display: none">
+                Logout
+              </button>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Games Won</div>
-            <div class="stat-value" id="gamesWon">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Best Time</div>
-            <div class="stat-value" id="bestTime">-</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Win Rate</div>
-            <div class="stat-value" id="winRate">0%</div>
+
+          <h2 class="stats-title">Your Statistics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Games</div>
+              <div class="stat-value" id="totalGames">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Games Won</div>
+              <div class="stat-value" id="gamesWon">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Best Time</div>
+              <div class="stat-value" id="bestTime">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Win Rate</div>
+              <div class="stat-value" id="winRate">0%</div>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="leaderboard">
+        <h2 class="leaderboard-title">Global Leaderboard</h2>
+        <div class="leaderboard-list" id="leaderboard">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how-to-play">
+        <h2 class="how-to-title">How to Play</h2>
+        <div class="instructions">
+          <div class="instruction">
+            <div class="instruction-title">Left Click</div>
+            <div>
+              Reveal a tile. If it's a mine, game over. If it's empty, it will
+              reveal adjacent tiles.
+            </div>
+          </div>
+          <div class="instruction">
+            <div class="instruction-title">Right Click</div>
+            <div>Place or remove a flag on a suspected mine.</div>
+          </div>
+          <div class="instruction">
+            <div class="instruction-title">Numbers</div>
+            <div>Indicate how many mines are adjacent to that tile.</div>
+          </div>
+          <div class="instruction">
+            <div class="instruction-title">Win Condition</div>
+            <div>Reveal all non-mine tiles to win the game.</div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <p>
+          © 2025 Minesweeper Elite - Discord Activity | Designed for Discord
+          Activities
+        </p>
+        <p>Last updated: <span id="lastUpdated">Never</span></p>
+      </footer>
     </div>
 
-    <div class="leaderboard">
-      <h2 class="leaderboard-title">Global Leaderboard</h2>
-      <div class="leaderboard-list" id="leaderboard">
-        <div class="loading">
-          <div class="loading-spinner"></div>
-        </div>
+    <div class="modal" id="winModal">
+      <div class="modal-content">
+        <h2 class="modal-title">Victory! 🎉</h2>
+        <p class="modal-message">
+          You cleared the minefield in <span id="winTime">0</span> seconds!
+        </p>
+        <button class="modal-btn" id="playAgainBtn">Play Again</button>
       </div>
     </div>
 
-    <div class="how-to-play">
-      <h2 class="how-to-title">How to Play</h2>
-      <div class="instructions">
-        <div class="instruction">
-          <div class="instruction-title">Left Click</div>
-          <div>Reveal a tile. If it's a mine, game over. If it's empty, it will reveal adjacent tiles.</div>
-        </div>
-        <div class="instruction">
-          <div class="instruction-title">Right Click</div>
-          <div>Place or remove a flag on a suspected mine.</div>
-        </div>
-        <div class="instruction">
-          <div class="instruction-title">Numbers</div>
-          <div>Indicate how many mines are adjacent to that tile.</div>
-        </div>
-        <div class="instruction">
-          <div class="instruction-title">Win Condition</div>
-          <div>Reveal all non-mine tiles to win the game.</div>
-        </div>
+    <div class="modal" id="loseModal">
+      <div class="modal-content">
+        <h2 class="modal-title">Game Over 💥</h2>
+        <p class="modal-message">You hit a mine! Better luck next time.</p>
+        <button class="modal-btn" id="tryAgainBtn">Try Again</button>
       </div>
     </div>
 
-    <footer>
-      <p>© 2025 Minesweeper Elite - Discord Activity | Designed for Discord Activities</p>
-      <p>Last updated: <span id="lastUpdated">Never</span></p>
-    </footer>
-  </div>
+    <script>
+      // Game configuration
+      const CLIENT_ID = "1241353770114351136";
+      // Dynamiczny redirect URI do Discorda
+      const REDIRECT_URI = window.location.origin + "/callback";
+      const API_BASE_URL = "https://discord.com/api";
 
-  <div class="modal" id="winModal">
-    <div class="modal-content">
-      <h2 class="modal-title">Victory! 🎉</h2>
-      <p class="modal-message">You cleared the minefield in <span id="winTime">0</span> seconds!</p>
-      <button class="modal-btn" id="playAgainBtn">Play Again</button>
-    </div>
-  </div>
+      let rows = 9,
+        cols = 9,
+        minesCount = 10;
+      let board = [];
+      let revealedCount = 0;
+      let flagsCount = 0;
+      let timer = 0,
+        timerInterval;
+      let gameStarted = false;
+      let gameOver = false;
+      let currentDifficulty = "easy";
 
-  <div class="modal" id="loseModal">
-    <div class="modal-content">
-      <h2 class="modal-title">Game Over 💥</h2>
-      <p class="modal-message">You hit a mine! Better luck next time.</p>
-      <button class="modal-btn" id="tryAgainBtn">Try Again</button>
-    </div>
-  </div>
+      // Discord user data
+      let discordUser = {
+        id: null,
+        username: "Guest",
+        avatar: null,
+        discriminator: "0",
+        connected: false,
+        accessToken: null,
+      };
 
-  <script>
-    // Game configuration
-    const CLIENT_ID = '1408815385012076738';
-    // Używamy dynamicznego redirect URI bazującego na aktualnej domenie
-    const REDIRECT_URI = window.location.origin + window.location.pathname;
-    const API_BASE_URL = 'https://discord.com/api';
+      // Stats data
+      let gameStats = {
+        totalGames: 0,
+        gamesWon: 0,
+        bestTime: null,
+        recentGames: [],
+        bestTimes: [],
+      };
 
-    let rows = 9, cols = 9, minesCount = 10;
-    let board = [];
-    let revealedCount = 0;
-    let flagsCount = 0;
-    let timer = 0, timerInterval;
-    let gameStarted = false;
-    let gameOver = false;
-    let currentDifficulty = 'easy';
+      // Global leaderboard data
+      let globalLeaderboard = [];
 
-    // Discord user data
-    let discordUser = {
-      id: null,
-      username: 'Guest',
-      avatar: null,
-      discriminator: '0',
-      connected: false,
-      accessToken: null
-    };
+      // DOM elements
+      const bombCountEl = document.getElementById("bombCountValue");
+      const timerEl = document.getElementById("timerValue");
+      const resetBtn = document.getElementById("resetBtn");
+      const boardEl = document.getElementById("board");
+      const difficultyButtons = document.querySelectorAll(".difficulty-btn");
+      const winModal = document.getElementById("winModal");
+      const loseModal = document.getElementById("loseModal");
+      const winTimeEl = document.getElementById("winTime");
+      const playAgainBtn = document.getElementById("playAgainBtn");
+      const tryAgainBtn = document.getElementById("tryAgainBtn");
+      const discordLoginBtn = document.getElementById("discordLoginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
 
-    // Stats data
-    let gameStats = {
-      totalGames: 0,
-      gamesWon: 0,
-      bestTime: null,
-      recentGames: [],
-      bestTimes: []
-    };
+      // Stats elements
+      const totalGamesEl = document.getElementById("totalGames");
+      const gamesWonEl = document.getElementById("gamesWon");
+      const bestTimeEl = document.getElementById("bestTime");
+      const winRateEl = document.getElementById("winRate");
+      const lastUpdatedEl = document.getElementById("lastUpdated");
+      const leaderboardEl = document.getElementById("leaderboard");
 
-    // Global leaderboard data
-    let globalLeaderboard = [];
+      // User info elements
+      const userInfoEl = document.getElementById("userInfo");
+      const userAvatarEl = document.getElementById("userAvatar");
+      const userNameEl = document.getElementById("userName");
+      const userIdEl = document.getElementById("userId");
 
-    // DOM elements
-    const bombCountEl = document.getElementById("bombCountValue");
-    const timerEl = document.getElementById("timerValue");
-    const resetBtn = document.getElementById("resetBtn");
-    const boardEl = document.getElementById("board");
-    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
-    const winModal = document.getElementById('winModal');
-    const loseModal = document.getElementById('loseModal');
-    const winTimeEl = document.getElementById('winTime');
-    const playAgainBtn = document.getElementById('playAgainBtn');
-    const tryAgainBtn = document.getElementById('tryAgainBtn');
-    const discordLoginBtn = document.getElementById('discordLoginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
+      // Check for Discord auth response
+      function checkAuthResponse() {
+        const hash = window.location.hash;
+        if (hash && hash.includes("access_token")) {
+          const params = new URLSearchParams(hash.substring(1));
+          const accessToken = params.get("access_token");
+          const tokenType = params.get("token_type");
+          const expiresIn = params.get("expires_in");
 
-    // Stats elements
-    const totalGamesEl = document.getElementById('totalGames');
-    const gamesWonEl = document.getElementById('gamesWon');
-    const bestTimeEl = document.getElementById('bestTime');
-    const winRateEl = document.getElementById('winRate');
-    const lastUpdatedEl = document.getElementById('lastUpdated');
-    const leaderboardEl = document.getElementById('leaderboard');
+          if (accessToken) {
+            // Store the access token
+            discordUser.accessToken = accessToken;
 
-    // User info elements
-    const userInfoEl = document.getElementById('userInfo');
-    const userAvatarEl = document.getElementById('userAvatar');
-    const userNameEl = document.getElementById('userName');
-    const userIdEl = document.getElementById('userId');
+            // Get user info
+            getUserInfo(accessToken);
 
-    // Check for Discord auth response
-    function checkAuthResponse() {
-      const hash = window.location.hash;
-      if (hash && hash.includes('access_token')) {
-        const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        const tokenType = params.get('token_type');
-        const expiresIn = params.get('expires_in');
-        
-        if (accessToken) {
-          // Store the access token
-          discordUser.accessToken = accessToken;
-          
-          // Get user info
-          getUserInfo(accessToken);
-          
-          // Clean up URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      } else {
-        // Try to get token from storage
-        const storedToken = localStorage.getItem('discordAccessToken');
-        const storedUser = localStorage.getItem('discordUser');
-        
-        if (storedToken && storedUser) {
-          discordUser.accessToken = storedToken;
-          discordUser = {...discordUser, ...JSON.parse(storedUser)};
-          updateUserInfo();
-          toggleLoginButtons(true);
-        }
-        
-        // Load stats
-        loadStats();
-      }
-    }
-
-    // Get user info from Discord
-    async function getUserInfo(accessToken) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/users/@me`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
+            // Clean up URL
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname
+            );
           }
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          discordUser = {
-            id: userData.id,
-            username: userData.username,
-            avatar: userData.avatar 
-              ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
-              : `https://cdn.discordapp.com/embed/avatars/${userData.discriminator % 5}.png`,
-            discriminator: userData.discriminator,
-            connected: true,
-            accessToken: accessToken
-          };
-          
-          // Save to localStorage
-          localStorage.setItem('discordAccessToken', accessToken);
-          localStorage.setItem('discordUser', JSON.stringify({
-            id: discordUser.id,
-            username: discordUser.username,
-            avatar: discordUser.avatar,
-            discriminator: discordUser.discriminator
-          }));
-          
-          updateUserInfo();
-          toggleLoginButtons(true);
+        } else {
+          // Try to get token from storage
+          const storedToken = localStorage.getItem("discordAccessToken");
+          const storedUser = localStorage.getItem("discordUser");
+
+          if (storedToken && storedUser) {
+            discordUser.accessToken = storedToken;
+            discordUser = { ...discordUser, ...JSON.parse(storedUser) };
+            updateUserInfo();
+            toggleLoginButtons(true);
+          }
+
+          // Load stats
           loadStats();
         }
-      } catch (error) {
-        console.error('Error fetching user info:', error);
-        userNameEl.textContent = 'Error connecting to Discord';
       }
-    }
 
-    // Initialize Discord auth
-    function initDiscordAuth() {
-      // Check for auth response
-      checkAuthResponse();
-    }
-
-    // Start Discord OAuth flow in a popup window
-    function startDiscordOAuth() {
-      const width = 600;
-      const height = 700;
-      const left = (screen.width - width) / 2;
-      const top = (screen.height - height) / 2;
-      
-      const authUrl = new URL('https://discord.com/oauth2/authorize');
-      authUrl.searchParams.append('client_id', CLIENT_ID);
-      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
-      authUrl.searchParams.append('response_type', 'token');
-      authUrl.searchParams.append('scope', 'identify');
-      
-      const popup = window.open(
-        authUrl.toString(), 
-        'Discord Login', 
-        `width=${width},height=${height},top=${top},left=${left}`
-      );
-      
-      if (!popup) {
-        alert('Please allow popups for this site to login with Discord');
-        return;
-      }
-      
-      // Check for popup closed or redirect
-      const checkPopup = setInterval(() => {
-        if (!popup || popup.closed) {
-          clearInterval(checkPopup);
-          // Check if we have the token in localStorage (set by the popup)
-          setTimeout(() => {
-            const token = localStorage.getItem('discordAccessToken');
-            const user = localStorage.getItem('discordUser');
-            
-            if (token && user) {
-              discordUser.accessToken = token;
-              discordUser = {...discordUser, ...JSON.parse(user)};
-              updateUserInfo();
-              toggleLoginButtons(true);
-              loadStats();
-            }
-          }, 1000);
-        }
-        
+      // Get user info from Discord
+      async function getUserInfo(accessToken) {
         try {
-          if (popup.location.href.includes(REDIRECT_URI)) {
-            const hash = popup.location.hash;
-            if (hash && hash.includes('access_token')) {
-              const params = new URLSearchParams(hash.substring(1));
-              const accessToken = params.get('access_token');
-              
-              if (accessToken) {
-                clearInterval(checkPopup);
-                popup.close();
-                
-                // Get user info
-                getUserInfo(accessToken);
-              }
-            }
+          const response = await fetch(`${API_BASE_URL}/users/@me`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            discordUser = {
+              id: userData.id,
+              username: userData.username,
+              avatar: userData.avatar
+                ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
+                : `https://cdn.discordapp.com/embed/avatars/${
+                    userData.discriminator % 5
+                  }.png`,
+              discriminator: userData.discriminator,
+              connected: true,
+              accessToken: accessToken,
+            };
+
+            // Save to localStorage
+            localStorage.setItem("discordAccessToken", accessToken);
+            localStorage.setItem(
+              "discordUser",
+              JSON.stringify({
+                id: discordUser.id,
+                username: discordUser.username,
+                avatar: discordUser.avatar,
+                discriminator: discordUser.discriminator,
+              })
+            );
+
+            updateUserInfo();
+            toggleLoginButtons(true);
+            loadStats();
           }
         } catch (error) {
-          // Cross-origin error, ignore - this is normal
-        }
-      }, 500);
-    }
-
-    // Logout function
-    function logout() {
-      localStorage.removeItem('discordAccessToken');
-      localStorage.removeItem('discordUser');
-      
-      discordUser = {
-        id: null,
-        username: 'Guest',
-        avatar: null,
-        discriminator: '0',
-        connected: false,
-        accessToken: null
-      };
-      
-      updateUserInfo();
-      toggleLoginButtons(false);
-    }
-
-    // Toggle login/logout buttons
-    function toggleLoginButtons(isLoggedIn) {
-      if (isLoggedIn) {
-        discordLoginBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-      } else {
-        discordLoginBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
-      }
-    }
-
-    // Initialize game
-    function initGame() {
-      clearInterval(timerInterval);
-      timer = 0;
-      timerEl.textContent = "0";
-      gameStarted = false;
-      gameOver = false;
-      resetBtn.textContent = "😊";
-
-      flagsCount = 0;
-      bombCountEl.textContent = minesCount;
-
-      boardEl.innerHTML = "";
-      board = [];
-      revealedCount = 0;
-
-      // Create board
-      for (let r = 0; r < rows; r++) {
-        board[r] = [];
-        for (let c = 0; c < cols; c++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          cell.addEventListener("click", () => handleClick(r, c));
-          cell.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            toggleFlag(r, c);
-          });
-          boardEl.appendChild(cell);
-          board[r][c] = { mine: false, revealed: false, flagged: false, el: cell, adjacent: 0 };
+          console.error("Error fetching user info:", error);
+          userNameEl.textContent = "Error connecting to Discord";
         }
       }
 
-      // Adjust grid layout based on dimensions
-      boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
-      boardEl.style.gridTemplateRows = `repeat(${rows}, var(--cell-size))`;
-    }
+      // Initialize Discord auth
+      function initDiscordAuth() {
+        // Check for auth response
+        checkAuthResponse();
+      }
 
-    // Place mines after first click to ensure safe start
-    function placeMines(firstRow, firstCol) {
-      let placed = 0;
-      while (placed < minesCount) {
-        let r = Math.floor(Math.random() * rows);
-        let c = Math.floor(Math.random() * cols);
-        
-        // Don't place mine on first clicked cell or its immediate neighbors
-        const isFirstClickArea = Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1;
-        
-        if (!board[r][c].mine && !isFirstClickArea) {
-          board[r][c].mine = true;
-          placed++;
+      // Start Discord OAuth flow in a popup window
+      function startDiscordOAuth() {
+        const width = 600;
+        const height = 700;
+        const left = (screen.width - width) / 2;
+        const top = (screen.height - height) / 2;
+
+        const authUrl = new URL("https://discord.com/oauth2/authorize");
+        authUrl.searchParams.append("client_id", CLIENT_ID);
+        authUrl.searchParams.append("redirect_uri", REDIRECT_URI);
+        authUrl.searchParams.append("response_type", "token");
+        authUrl.searchParams.append("scope", "identify");
+
+        const popup = window.open(
+          authUrl.toString(),
+          "Discord Login",
+          `width=${width},height=${height},top=${top},left=${left}`
+        );
+
+        if (!popup) {
+          alert("Please allow popups for this site to login with Discord");
+          return;
+        }
+
+        // Check for popup closed or redirect
+        const checkPopup = setInterval(() => {
+          if (!popup || popup.closed) {
+            clearInterval(checkPopup);
+            // Check if we have the token in localStorage (set by the popup)
+            setTimeout(() => {
+              const token = localStorage.getItem("discordAccessToken");
+              const user = localStorage.getItem("discordUser");
+
+              if (token && user) {
+                discordUser.accessToken = token;
+                discordUser = { ...discordUser, ...JSON.parse(user) };
+                updateUserInfo();
+                toggleLoginButtons(true);
+                loadStats();
+              }
+            }, 1000);
+          }
+
+          try {
+            if (popup.location.href.includes(REDIRECT_URI)) {
+              const hash = popup.location.hash;
+              if (hash && hash.includes("access_token")) {
+                const params = new URLSearchParams(hash.substring(1));
+                const accessToken = params.get("access_token");
+
+                if (accessToken) {
+                  clearInterval(checkPopup);
+                  popup.close();
+
+                  // Get user info
+                  getUserInfo(accessToken);
+                }
+              }
+            }
+          } catch (error) {
+            // Cross-origin error, ignore - this is normal
+          }
+        }, 500);
+      }
+
+      // Logout function
+      function logout() {
+        localStorage.removeItem("discordAccessToken");
+        localStorage.removeItem("discordUser");
+
+        discordUser = {
+          id: null,
+          username: "Guest",
+          avatar: null,
+          discriminator: "0",
+          connected: false,
+          accessToken: null,
+        };
+
+        updateUserInfo();
+        toggleLoginButtons(false);
+      }
+
+      // Toggle login/logout buttons
+      function toggleLoginButtons(isLoggedIn) {
+        if (isLoggedIn) {
+          discordLoginBtn.style.display = "none";
+          logoutBtn.style.display = "block";
+        } else {
+          discordLoginBtn.style.display = "block";
+          logoutBtn.style.display = "none";
         }
       }
 
-      // Count adjacent mines
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (board[r][c].mine) continue;
-          let count = 0;
+      // Initialize game
+      function initGame() {
+        clearInterval(timerInterval);
+        timer = 0;
+        timerEl.textContent = "0";
+        gameStarted = false;
+        gameOver = false;
+        resetBtn.textContent = "😊";
+
+        flagsCount = 0;
+        bombCountEl.textContent = minesCount;
+
+        boardEl.innerHTML = "";
+        board = [];
+        revealedCount = 0;
+
+        // Create board
+        for (let r = 0; r < rows; r++) {
+          board[r] = [];
+          for (let c = 0; c < cols; c++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.addEventListener("click", () => handleClick(r, c));
+            cell.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              toggleFlag(r, c);
+            });
+            boardEl.appendChild(cell);
+            board[r][c] = {
+              mine: false,
+              revealed: false,
+              flagged: false,
+              el: cell,
+              adjacent: 0,
+            };
+          }
+        }
+
+        // Adjust grid layout based on dimensions
+        boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+        boardEl.style.gridTemplateRows = `repeat(${rows}, var(--cell-size))`;
+      }
+
+      // Place mines after first click to ensure safe start
+      function placeMines(firstRow, firstCol) {
+        let placed = 0;
+        while (placed < minesCount) {
+          let r = Math.floor(Math.random() * rows);
+          let c = Math.floor(Math.random() * cols);
+
+          // Don't place mine on first clicked cell or its immediate neighbors
+          const isFirstClickArea =
+            Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1;
+
+          if (!board[r][c].mine && !isFirstClickArea) {
+            board[r][c].mine = true;
+            placed++;
+          }
+        }
+
+        // Count adjacent mines
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (board[r][c].mine) continue;
+            let count = 0;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr,
+                  nc = c + dc;
+                if (
+                  nr >= 0 &&
+                  nr < rows &&
+                  nc >= 0 &&
+                  nc < cols &&
+                  board[nr][nc].mine
+                ) {
+                  count++;
+                }
+              }
+            }
+            board[r][c].adjacent = count;
+          }
+        }
+      }
+
+      // Handle cell click
+      function handleClick(r, c) {
+        if (gameOver) return;
+
+        const cell = board[r][c];
+        if (cell.revealed || cell.flagged) return;
+
+        // Start game on first click
+        if (!gameStarted) {
+          gameStarted = true;
+          startTimer();
+          placeMines(r, c);
+        }
+
+        reveal(r, c);
+      }
+
+      // Reveal cell
+      function reveal(r, c) {
+        const cell = board[r][c];
+        if (cell.revealed || cell.flagged) return;
+
+        cell.revealed = true;
+        cell.el.classList.add("revealed");
+
+        if (cell.mine) {
+          cell.el.classList.add("mine");
+          cell.el.textContent = "💣";
+          resetBtn.textContent = "😵";
+          endGame(false);
+          return;
+        }
+
+        revealedCount++;
+        if (cell.adjacent > 0) {
+          cell.el.textContent = cell.adjacent;
+          cell.el.classList.add("n" + cell.adjacent);
+        } else {
+          // Reveal adjacent cells for empty cells
           for (let dr = -1; dr <= 1; dr++) {
             for (let dc = -1; dc <= 1; dc++) {
-              const nr = r + dr, nc = c + dc;
-              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].mine) {
-                count++;
+              const nr = r + dr,
+                nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                reveal(nr, nc);
               }
             }
           }
-          board[r][c].adjacent = count;
+        }
+
+        // Check for win
+        if (revealedCount === rows * cols - minesCount) {
+          resetBtn.textContent = "😎";
+          endGame(true);
         }
       }
-    }
 
-    // Handle cell click
-    function handleClick(r, c) {
-      if (gameOver) return;
-      
-      const cell = board[r][c];
-      if (cell.revealed || cell.flagged) return;
+      // Toggle flag
+      function toggleFlag(r, c) {
+        if (!gameStarted || gameOver) return;
 
-      // Start game on first click
-      if (!gameStarted) {
-        gameStarted = true;
-        startTimer();
-        placeMines(r, c);
+        const cell = board[r][c];
+        if (cell.revealed) return;
+
+        if (cell.flagged) {
+          cell.flagged = false;
+          cell.el.classList.remove("flag");
+          cell.el.textContent = "";
+          flagsCount--;
+        } else {
+          if (flagsCount < minesCount) {
+            cell.flagged = true;
+            cell.el.classList.add("flag");
+            cell.el.textContent = "🚩";
+            flagsCount++;
+          }
+        }
+        bombCountEl.textContent = minesCount - flagsCount;
       }
 
-      reveal(r, c);
-    }
-
-    // Reveal cell
-    function reveal(r, c) {
-      const cell = board[r][c];
-      if (cell.revealed || cell.flagged) return;
-
-      cell.revealed = true;
-      cell.el.classList.add("revealed");
-
-      if (cell.mine) {
-        cell.el.classList.add("mine");
-        cell.el.textContent = "💣";
-        resetBtn.textContent = "😵";
-        endGame(false);
-        return;
+      // Start timer
+      function startTimer() {
+        clearInterval(timerInterval);
+        timer = 0;
+        timerInterval = setInterval(() => {
+          timer++;
+          timerEl.textContent = timer;
+        }, 1000);
       }
 
-      revealedCount++;
-      if (cell.adjacent > 0) {
-        cell.el.textContent = cell.adjacent;
-        cell.el.classList.add("n" + cell.adjacent);
-      } else {
-        // Reveal adjacent cells for empty cells
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const nr = r + dr, nc = c + dc;
-            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-              reveal(nr, nc);
+      // End game
+      function endGame(win) {
+        gameOver = true;
+        clearInterval(timerInterval);
+
+        // Update statistics
+        updateStats(win);
+
+        // Reveal all mines
+        if (!win) {
+          board.flat().forEach((cell) => {
+            if (cell.mine && !cell.revealed) {
+              cell.el.textContent = "💣";
+              cell.el.classList.add("mine");
             }
-          }
-        }
-      }
-
-      // Check for win
-      if (revealedCount === rows * cols - minesCount) {
-        resetBtn.textContent = "😎";
-        endGame(true);
-      }
-    }
-
-    // Toggle flag
-    function toggleFlag(r, c) {
-      if (!gameStarted || gameOver) return;
-      
-      const cell = board[r][c];
-      if (cell.revealed) return;
-
-      if (cell.flagged) {
-        cell.flagged = false;
-        cell.el.classList.remove("flag");
-        cell.el.textContent = "";
-        flagsCount--;
-      } else {
-        if (flagsCount < minesCount) {
-          cell.flagged = true;
-          cell.el.classList.add("flag");
-          cell.el.textContent = "🚩";
-          flagsCount++;
-        }
-      }
-      bombCountEl.textContent = minesCount - flagsCount;
-    }
-
-    // Start timer
-    function startTimer() {
-      clearInterval(timerInterval);
-      timer = 0;
-      timerInterval = setInterval(() => {
-        timer++;
-        timerEl.textContent = timer;
-      }, 1000);
-    }
-
-    // End game
-    function endGame(win) {
-      gameOver = true;
-      clearInterval(timerInterval);
-      
-      // Update statistics
-      updateStats(win);
-      
-      // Reveal all mines
-      if (!win) {
-        board.flat().forEach(cell => {
-          if (cell.mine && !cell.revealed) {
-            cell.el.textContent = "💣";
-            cell.el.classList.add("mine");
-          }
-        });
-      }
-
-      // Show appropriate modal
-      setTimeout(() => {
-        if (win) {
-          winTimeEl.textContent = timer;
-          winModal.style.display = "flex";
-          createConfetti();
-        } else {
-          loseModal.style.display = "flex";
-        }
-      }, 500);
-    }
-
-    // Create confetti effect
-    function createConfetti() {
-      const colors = ['#5865F2', '#57F287', '#FEE75C', '#EB459E', '#ED4245'];
-      for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.top = '-10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-        document.body.appendChild(confetti);
-        
-        // Animate confetti
-        const animationDuration = Math.random() * 3 + 2;
-        confetti.animate([
-          { top: '-10px', transform: 'rotate(0deg)' },
-          { top: '100vh', transform: `rotate(${Math.random() * 720}deg)` }
-        ], {
-          duration: animationDuration * 1000,
-          easing: 'cubic-bezier(0.1, 0.8, 0.1, 1)',
-          fill: 'forwards'
-        });
-        
-        // Remove confetti after animation
-        setTimeout(() => {
-          confetti.remove();
-        }, animationDuration * 1000);
-      }
-    }
-
-    // Set difficulty
-    function setDifficulty(difficulty) {
-      currentDifficulty = difficulty;
-      
-      // Update active button
-      difficultyButtons.forEach(btn => {
-        if (btn.dataset.difficulty === difficulty) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-      
-      // Set parameters based on difficulty
-      switch(difficulty) {
-        case 'easy':
-          rows = 9;
-          cols = 9;
-          minesCount = 10;
-          break;
-        case 'medium':
-          rows = 16;
-          cols = 16;
-          minesCount = 40;
-          break;
-        case 'hard':
-          rows = 16;
-          cols = 30;
-          minesCount = 99;
-          break;
-      }
-      
-      initGame();
-    }
-
-    // Load stats from localStorage
-    function loadStats() {
-      const savedStats = localStorage.getItem('minesweeperStats');
-      if (savedStats) {
-        gameStats = JSON.parse(savedStats);
-      }
-      
-      updateStatsDisplay();
-      loadGlobalLeaderboard();
-    }
-
-    // Save stats to localStorage
-    function saveStats() {
-      localStorage.setItem('minesweeperStats', JSON.stringify(gameStats));
-    }
-
-    // Update game statistics
-    function updateStats(win) {
-      gameStats.totalGames++;
-      
-      const gameResult = {
-        date: new Date().toISOString(),
-        difficulty: currentDifficulty,
-        time: timer,
-        result: win ? 'win' : 'loss',
-        player: discordUser.connected ? {
-          id: discordUser.id,
-          username: discordUser.username,
-          avatar: discordUser.avatar
-        } : null
-      };
-      
-      // Add to recent games (limit to 5)
-      gameStats.recentGames.unshift(gameResult);
-      if (gameStats.recentGames.length > 5) {
-        gameStats.recentGames.pop();
-      }
-      
-      if (win) {
-        gameStats.gamesWon++;
-        
-        // Update best time if applicable
-        if (!gameStats.bestTime || timer < gameStats.bestTime) {
-          gameStats.bestTime = timer;
-        }
-        
-        // Add to best times (limit to 5)
-        gameStats.bestTimes.push({
-          time: timer, 
-          date: new Date().toISOString(), 
-          difficulty: currentDifficulty,
-          player: discordUser.connected ? {
-            id: discordUser.id,
-            username: discordUser.username,
-            avatar: discordUser.avatar
-          } : null
-        });
-        
-        gameStats.bestTimes.sort((a, b) => a.time - b.time);
-        if (gameStats.bestTimes.length > 5) {
-          gameStats.bestTimes.pop();
-        }
-        
-        // Save to global leaderboard (simulated)
-        if (discordUser.connected) {
-          saveToGlobalLeaderboard({
-            player: {
-              id: discordUser.id,
-              username: discordUser.username,
-              avatar: discordUser.avatar
-            },
-            time: timer,
-            difficulty: currentDifficulty,
-            date: new Date().toISOString()
           });
         }
-      }
-      
-      // Save and update display
-      saveStats();
-      updateStatsDisplay();
-    }
 
-    // Update statistics display
-    function updateStatsDisplay() {
-      totalGamesEl.textContent = gameStats.totalGames;
-      gamesWonEl.textContent = gameStats.gamesWon;
-      
-      if (gameStats.bestTime) {
-        bestTimeEl.textContent = `${gameStats.bestTime}s`;
-      } else {
-        bestTimeEl.textContent = '-';
+        // Show appropriate modal
+        setTimeout(() => {
+          if (win) {
+            winTimeEl.textContent = timer;
+            winModal.style.display = "flex";
+            createConfetti();
+          } else {
+            loseModal.style.display = "flex";
+          }
+        }, 500);
       }
-      
-      if (gameStats.totalGames > 0) {
-        const winRate = Math.round((gameStats.gamesWon / gameStats.totalGames) * 100);
-        winRateEl.textContent = `${winRate}%`;
-      } else {
-        winRateEl.textContent = '0%';
-      }
-      
-      // Update last updated time
-      lastUpdatedEl.textContent = new Date().toLocaleString();
-    }
 
-    // Update user info display
-    function updateUserInfo() {
-      if (discordUser.connected) {
-        userAvatarEl.src = discordUser.avatar;
-        userNameEl.textContent = `${discordUser.username}#${discordUser.discriminator}`;
-        userIdEl.textContent = `ID: ${discordUser.id}`;
-      } else {
-        userAvatarEl.src = 'https://cdn.discordapp.com/embed/avatars/0.png';
-        userNameEl.textContent = 'Guest Player';
-        userIdEl.textContent = 'Not connected to Discord';
-      }
-    }
+      // Create confetti effect
+      function createConfetti() {
+        const colors = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245"];
+        for (let i = 0; i < 100; i++) {
+          const confetti = document.createElement("div");
+          confetti.classList.add("confetti");
+          confetti.style.left = Math.random() * 100 + "vw";
+          confetti.style.top = "-10px";
+          confetti.style.backgroundColor =
+            colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+          document.body.appendChild(confetti);
 
-    // Simulated global leaderboard functions
-    function loadGlobalLeaderboard() {
-      // Simulate loading
-      leaderboardEl.innerHTML = `
+          // Animate confetti
+          const animationDuration = Math.random() * 3 + 2;
+          confetti.animate(
+            [
+              { top: "-10px", transform: "rotate(0deg)" },
+              { top: "100vh", transform: `rotate(${Math.random() * 720}deg)` },
+            ],
+            {
+              duration: animationDuration * 1000,
+              easing: "cubic-bezier(0.1, 0.8, 0.1, 1)",
+              fill: "forwards",
+            }
+          );
+
+          // Remove confetti after animation
+          setTimeout(() => {
+            confetti.remove();
+          }, animationDuration * 1000);
+        }
+      }
+
+      // Set difficulty
+      function setDifficulty(difficulty) {
+        currentDifficulty = difficulty;
+
+        // Update active button
+        difficultyButtons.forEach((btn) => {
+          if (btn.dataset.difficulty === difficulty) {
+            btn.classList.add("active");
+          } else {
+            btn.classList.remove("active");
+          }
+        });
+
+        // Set parameters based on difficulty
+        switch (difficulty) {
+          case "easy":
+            rows = 9;
+            cols = 9;
+            minesCount = 10;
+            break;
+          case "medium":
+            rows = 16;
+            cols = 16;
+            minesCount = 40;
+            break;
+          case "hard":
+            rows = 16;
+            cols = 30;
+            minesCount = 99;
+            break;
+        }
+
+        initGame();
+      }
+
+      // Load stats from localStorage
+      function loadStats() {
+        const savedStats = localStorage.getItem("minesweeperStats");
+        if (savedStats) {
+          gameStats = JSON.parse(savedStats);
+        }
+
+        updateStatsDisplay();
+        loadGlobalLeaderboard();
+      }
+
+      // Save stats to localStorage
+      function saveStats() {
+        localStorage.setItem("minesweeperStats", JSON.stringify(gameStats));
+      }
+
+      // Update game statistics
+      function updateStats(win) {
+        gameStats.totalGames++;
+
+        const gameResult = {
+          date: new Date().toISOString(),
+          difficulty: currentDifficulty,
+          time: timer,
+          result: win ? "win" : "loss",
+          player: discordUser.connected
+            ? {
+                id: discordUser.id,
+                username: discordUser.username,
+                avatar: discordUser.avatar,
+              }
+            : null,
+        };
+
+        // Add to recent games (limit to 5)
+        gameStats.recentGames.unshift(gameResult);
+        if (gameStats.recentGames.length > 5) {
+          gameStats.recentGames.pop();
+        }
+
+        if (win) {
+          gameStats.gamesWon++;
+
+          // Update best time if applicable
+          if (!gameStats.bestTime || timer < gameStats.bestTime) {
+            gameStats.bestTime = timer;
+          }
+
+          // Add to best times (limit to 5)
+          gameStats.bestTimes.push({
+            time: timer,
+            date: new Date().toISOString(),
+            difficulty: currentDifficulty,
+            player: discordUser.connected
+              ? {
+                  id: discordUser.id,
+                  username: discordUser.username,
+                  avatar: discordUser.avatar,
+                }
+              : null,
+          });
+
+          gameStats.bestTimes.sort((a, b) => a.time - b.time);
+          if (gameStats.bestTimes.length > 5) {
+            gameStats.bestTimes.pop();
+          }
+
+          // Save to global leaderboard (simulated)
+          if (discordUser.connected) {
+            saveToGlobalLeaderboard({
+              player: {
+                id: discordUser.id,
+                username: discordUser.username,
+                avatar: discordUser.avatar,
+              },
+              time: timer,
+              difficulty: currentDifficulty,
+              date: new Date().toISOString(),
+            });
+          }
+        }
+
+        // Save and update display
+        saveStats();
+        updateStatsDisplay();
+      }
+
+      // Update statistics display
+      function updateStatsDisplay() {
+        totalGamesEl.textContent = gameStats.totalGames;
+        gamesWonEl.textContent = gameStats.gamesWon;
+
+        if (gameStats.bestTime) {
+          bestTimeEl.textContent = `${gameStats.bestTime}s`;
+        } else {
+          bestTimeEl.textContent = "-";
+        }
+
+        if (gameStats.totalGames > 0) {
+          const winRate = Math.round(
+            (gameStats.gamesWon / gameStats.totalGames) * 100
+          );
+          winRateEl.textContent = `${winRate}%`;
+        } else {
+          winRateEl.textContent = "0%";
+        }
+
+        // Update last updated time
+        lastUpdatedEl.textContent = new Date().toLocaleString();
+      }
+
+      // Update user info display
+      function updateUserInfo() {
+        if (discordUser.connected) {
+          userAvatarEl.src = discordUser.avatar;
+          userNameEl.textContent = `${discordUser.username}#${discordUser.discriminator}`;
+          userIdEl.textContent = `ID: ${discordUser.id}`;
+        } else {
+          userAvatarEl.src = "https://cdn.discordapp.com/embed/avatars/0.png";
+          userNameEl.textContent = "Guest Player";
+          userIdEl.textContent = "Not connected to Discord";
+        }
+      }
+
+      // Simulated global leaderboard functions
+      function loadGlobalLeaderboard() {
+        // Simulate loading
+        leaderboardEl.innerHTML = `
         <div class="loading">
           <div class="loading-spinner"></div>
         </div>
       `;
-      
-      // Simulate API delay
-      setTimeout(() => {
-        // Try to get from localStorage
-        const savedLeaderboard = localStorage.getItem('globalLeaderboard');
-        if (savedLeaderboard) {
-          globalLeaderboard = JSON.parse(savedLeaderboard);
-        }
-        
-        updateLeaderboardDisplay();
-      }, 1000);
-    }
-    
-    function saveToGlobalLeaderboard(score) {
-      // Add to leaderboard
-      globalLeaderboard.push(score);
-      
-      // Sort by time (ascending)
-      globalLeaderboard.sort((a, b) => a.time - b.time);
-      
-      // Keep only top 10
-      if (globalLeaderboard.length > 10) {
-        globalLeaderboard = globalLeaderboard.slice(0, 10);
+
+        // Simulate API delay
+        setTimeout(() => {
+          // Try to get from localStorage
+          const savedLeaderboard = localStorage.getItem("globalLeaderboard");
+          if (savedLeaderboard) {
+            globalLeaderboard = JSON.parse(savedLeaderboard);
+          }
+
+          updateLeaderboardDisplay();
+        }, 1000);
       }
-      
-      // Save to localStorage
-      localStorage.setItem('globalLeaderboard', JSON.stringify(globalLeaderboard));
-      
-      // Update display
-      updateLeaderboardDisplay();
-    }
-    
-    function updateLeaderboardDisplay() {
-      leaderboardEl.innerHTML = '';
-      
-      if (globalLeaderboard.length === 0) {
-        const item = document.createElement('div');
-        item.classList.add('leaderboard-item');
-        item.innerHTML = `
+
+      function saveToGlobalLeaderboard(score) {
+        // Add to leaderboard
+        globalLeaderboard.push(score);
+
+        // Sort by time (ascending)
+        globalLeaderboard.sort((a, b) => a.time - b.time);
+
+        // Keep only top 10
+        if (globalLeaderboard.length > 10) {
+          globalLeaderboard = globalLeaderboard.slice(0, 10);
+        }
+
+        // Save to localStorage
+        localStorage.setItem(
+          "globalLeaderboard",
+          JSON.stringify(globalLeaderboard)
+        );
+
+        // Update display
+        updateLeaderboardDisplay();
+      }
+
+      function updateLeaderboardDisplay() {
+        leaderboardEl.innerHTML = "";
+
+        if (globalLeaderboard.length === 0) {
+          const item = document.createElement("div");
+          item.classList.add("leaderboard-item");
+          item.innerHTML = `
           <div class="leaderboard-user">
             <img class="leaderboard-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar">
             <span class="leaderboard-name">No records yet</span>
           </div>
           <span class="leaderboard-time">-</span>
         `;
-        leaderboardEl.appendChild(item);
-        return;
-      }
-      
-      globalLeaderboard.forEach((score, index) => {
-        const item = document.createElement('div');
-        item.classList.add('leaderboard-item');
-        
-        const avatar = score.player?.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
-        const username = score.player?.username || 'Anonymous';
-        
-        item.innerHTML = `
+          leaderboardEl.appendChild(item);
+          return;
+        }
+
+        globalLeaderboard.forEach((score, index) => {
+          const item = document.createElement("div");
+          item.classList.add("leaderboard-item");
+
+          const avatar =
+            score.player?.avatar ||
+            "https://cdn.discordapp.com/embed/avatars/0.png";
+          const username = score.player?.username || "Anonymous";
+
+          item.innerHTML = `
           <div class="leaderboard-user">
             <img class="leaderboard-avatar" src="${avatar}" alt="${username}">
             <span class="leaderboard-name">${username}</span>
           </div>
           <span class="leaderboard-time">${score.time}s</span>
         `;
-        leaderboardEl.appendChild(item);
+          leaderboardEl.appendChild(item);
+        });
+      }
+
+      // Event listeners
+      resetBtn.addEventListener("click", () => {
+        initGame();
       });
-    }
 
-    // Event listeners
-    resetBtn.addEventListener("click", () => {
-      initGame();
-    });
-
-    difficultyButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        setDifficulty(btn.dataset.difficulty);
+      difficultyButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          setDifficulty(btn.dataset.difficulty);
+        });
       });
-    });
 
-    playAgainBtn.addEventListener('click', () => {
-      winModal.style.display = "none";
-      initGame();
-    });
+      playAgainBtn.addEventListener("click", () => {
+        winModal.style.display = "none";
+        initGame();
+      });
 
-    tryAgainBtn.addEventListener('click', () => {
-      loseModal.style.display = "none";
-      initGame();
-    });
+      tryAgainBtn.addEventListener("click", () => {
+        loseModal.style.display = "none";
+        initGame();
+      });
 
-    discordLoginBtn.addEventListener('click', () => {
-      startDiscordOAuth();
-    });
+      discordLoginBtn.addEventListener("click", () => {
+        startDiscordOAuth();
+      });
 
-    logoutBtn.addEventListener('click', () => {
-      logout();
-    });
+      logoutBtn.addEventListener("click", () => {
+        logout();
+      });
 
-    // Initialize the game and Discord auth
-    initDiscordAuth();
-    setDifficulty('easy');
+      // Initialize the game and Discord auth
+      initDiscordAuth();
+      setDifficulty("easy");
 
-    // Periodically update the display
-    setInterval(() => {
-      lastUpdatedEl.textContent = new Date().toLocaleString();
-    }, 30000);
-  </script>
-</body>
+      // Periodically update the display
+      setInterval(() => {
+        lastUpdatedEl.textContent = new Date().toLocaleString();
+      }, 30000);
+    </script>
+  </body>
 </html>
+
